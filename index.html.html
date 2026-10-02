@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>AWARE-ID</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Tata letak: satu aplikasi konter dengan tiga layar (Kasir, Triase, Dasbor). Form di kiri, putusan sistem di kanan, bertumpuk di layar sempit. */
+:root{
+  --bg:#eef3f4; --surface:#ffffff; --surface-2:#f5f8f9; --line:#d3dee1; --fg:#10272e; --muted:#577079;
+  --accent:#0b5c6e; --accent-fg:#ffffff; --accent-soft:#dcedf0;
+  --ok:#17764a; --ok-bg:#dff3e7; --warn:#8a5a00; --warn-bg:#fdefc8; --bad:#b3261e; --bad-bg:#fbe2df;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1a1e; --surface:#13262c; --surface-2:#182f36; --line:#27434b; --fg:#e6f0f2; --muted:#93adb5;
+  --accent:#5cc4d6; --accent-fg:#06262d; --accent-soft:#17383f;
+  --ok:#6fd6a0; --ok-bg:#143a29; --warn:#f2c35c; --warn-bg:#3d3010; --bad:#ff9c93; --bad-bg:#46201d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1a1e; --surface:#13262c; --surface-2:#182f36; --line:#27434b; --fg:#e6f0f2; --muted:#93adb5;
+  --accent:#5cc4d6; --accent-fg:#06262d; --accent-soft:#17383f;
+  --ok:#6fd6a0; --ok-bg:#143a29; --warn:#f2c35c; --warn-bg:#3d3010; --bad:#ff9c93; --bad-bg:#46201d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:0 48px;display:flex;flex-direction:column;gap:20px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 10px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.brand{display:flex;flex-direction:column;gap:0}
+.brand b{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.brand span{font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:14px;display:flex;gap:8px;align-items:baseline}
+.tab small{font-weight:500;color:var(--muted);font-size:12px}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tab[aria-selected="true"] small{color:inherit;opacity:.8}
+.tab .cnt{font-family:var(--mono);font-size:11px;background:var(--bad);color:var(--surface);border-radius:999px;padding:0 6px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:16px;margin:0}
+.lead{color:var(--muted);margin:4px 0 0;max-width:65ch}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+@media (max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.queue{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.person{text-align:left;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:9px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.person b{font-size:14px}
+.person span{font-size:12px;color:var(--muted)}
+.person[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:460px){.fields{grid-template-columns:minmax(0,1fr)}}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f label{font-size:12px;font-weight:600;color:var(--muted)}
+.f input,.f select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-fg);border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.quiet{border-color:var(--line);background:var(--surface-2);color:var(--fg);font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.big{padding:16px;font-size:17px;flex:1;min-width:120px}
+.switch{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--accent)}
+.status{border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;border:1px solid transparent}
+.status .big{font-size:24px;font-weight:800;letter-spacing:.02em;display:flex;gap:10px;align-items:center}
+.dot{width:14px;height:14px;border-radius:50%;background:currentColor;display:inline-block;flex:none}
+.s-hijau{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+.s-kuning{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.s-merah{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.s-biasa,.s-idle{background:var(--surface-2);color:var(--fg);border-color:var(--line)}
+.status p{margin:0;color:var(--fg);font-size:14px}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.checks li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.checks li:last-child{border-bottom:0}
+.checks .ic{font-family:var(--mono);font-weight:600;text-align:center}
+.checks .d{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.c-ok .ic{color:var(--ok)} .c-warn .ic{color:var(--warn)} .c-bad .ic{color:var(--bad)} .c-skip{opacity:.5}
+.checks li.wait{opacity:.25}
+.lockbox{border:1px dashed var(--warn);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2)}
+.note{font-size:13px;color:var(--muted);margin:0}
+.err{font-size:13px;color:var(--bad);margin:0;font-weight:600}
+.pill{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.p-ok{background:var(--ok-bg);color:var(--ok)} .p-warn{background:var(--warn-bg);color:var(--warn)} .p-bad{background:var(--bad-bg);color:var(--bad)} .p-n{background:var(--accent-soft);color:var(--accent)}
+/* triase */
+.tablet{max-width:640px;margin:0 auto;width:100%}
+.prog{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.prog i{height:6px;border-radius:3px;background:var(--line)}
+.prog i.done{background:var(--accent)} .prog i.flag{background:var(--bad)}
+.q{font-size:21px;font-weight:700;line-height:1.3;margin:0;text-wrap:balance}
+.advice{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+/* dasbor */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .s{font-size:12px;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(90px,170px) minmax(0,1fr) 54px;gap:10px;align-items:center;font-size:13px}
+.track{position:relative;height:18px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--accent);transition:width .4s}
+.fill.low{background:var(--bad)} .fill.mid{background:var(--warn)} .fill.hi{background:var(--ok)}
+.thr{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:var(--fg)}
+.bar .n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+th button{all:unset;cursor:pointer;font:inherit;letter-spacing:inherit}
+th button:focus-visible{outline:2px solid var(--accent)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.live td{background:var(--accent-soft);font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);z-index:9}
+footer{font-size:12px;color:var(--muted);max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand"><b>AWARE-ID</b><span>Simulasi kunci serah berjenjang di meja apotek</span></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-kasir" data-tab="kasir">Layar Kasir <small>memeriksa</small></button>
+    <button class="tab" role="tab" id="tab-triase" data-tab="triase">Layar Triase <small>mengarahkan</small> <span class="cnt" id="triCnt" hidden>1</span></button>
+    <button class="tab" role="tab" id="tab-dasbor" data-tab="dasbor">Dasbor RSB <small>mengawasi</small></button>
+  </div>
+</header>
+
+<!-- ============ KASIR ============ -->
+<section id="p-kasir" role="tabpanel">
+  <div class="row between" style="margin-bottom:14px">
+    <div><h1>Gerbang Resep</h1><p class="lead">Pilih pembeli di antrean atau isi sendiri, lalu pindai. Sistem mencocokkan Nomor Resep Nasional, nama pasien, status tebus, dan jumlah.</p></div>
+    <label class="switch" for="gate"><input type="checkbox" id="gate" checked> Gerbang Resep aktif</label>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div><div class="eyebrow">Antrean konter</div></div>
+      <div class="queue" id="queue"></div>
+      <form id="scanForm" class="fields">
+        <div class="f wide"><label for="fObat">Kemasan yang dipindai</label><select id="fObat"></select></div>
+        <div class="f"><label for="fNama">Nama pembeli atau pasien</label><input id="fNama" autocomplete="off"></div>
+        <div class="f"><label for="fQty">Jumlah diminta</label><input id="fQty" type="number" min="1" max="60"></div>
+        <div class="f"><label for="fJenis">Resep yang dibawa</label><select id="fJenis"><option value="e">Resep elektronik</option><option value="k">Resep kertas</option><option value="t">Tanpa resep</option></select></div>
+        <div class="f"><label for="fNrn">Nomor Resep Nasional</label><input id="fNrn" class="mono" autocomplete="off" placeholder="NRN-"></div>
+        <div class="f wide"><button class="btn" type="submit">Pindai dan periksa</button></div>
+      </form>
+    </div>
+    <div class="panel" id="result" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ TRIASE ============ -->
+<section id="p-triase" role="tabpanel" hidden>
+  <div class="tablet">
+    <div style="margin-bottom:14px"><h1>Jalur Sehat</h1><p class="lead">Enam pertanyaan gejala untuk pembeli tanpa resep. Hasilnya hanya saran. Apoteker tetap memutuskan.</p></div>
+    <div class="panel" id="triage" aria-live="polite"></div>
+    <p class="note" style="margin-top:10px">Butir pertanyaan masih draf yang disusun dari panduan WHO AWaRe dan akan divalidasi bersama Program Studi Farmasi ULM pada 2027. Simulasi ini bukan nasihat medis.</p>
+  </div>
+</section>
+
+<!-- ============ DASBOR ============ -->
+<section id="p-dasbor" role="tabpanel" hidden>
+  <div class="row between" style="margin-bottom:14px">
+    <div><h1>Cermin AWaRe</h1><p class="lead">Rasio Serah Beresep (RSB) adalah persentase penyerahan antibiotik yang tertaut resep sah. Angka sesi ini berubah mengikuti transaksi di Layar Kasir.</p></div>
+    <button class="btn quiet" id="reset" type="button">Kembalikan ke contoh awal</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="row between"><h2>RSB terhadap ambang pilot</h2><span class="note">Garis tegak menandai ambang 80%</span></div>
+        <div class="bars" id="bars"></div>
+        <p class="note">Proksi nasional dihitung dari SKI 2023 (Kemenkes, 2024). Tabalong dari kunjungan uji Wulandari et al. (2021).</p>
+      </div>
+      <div class="panel">
+        <h2>Putusan gerbang sesi ini</h2>
+        <div class="bars" id="mix"></div>
+        <p class="note" id="mixNote"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row between">
+        <h2>Daftar apotek <span class="pill p-n">ilustrasi tampilan</span></h2>
+        <div class="row">
+          <div class="f"><label for="fWil">Wilayah</label><select id="fWil"><option value="">Semua</option><option>Banjarbaru</option><option>Tabalong</option></select></div>
+          <div class="f"><label for="fSt">Status</label><select id="fSt"><option value="">Semua</option><option>Di atas ambang</option><option>Pendampingan</option><option>Sasaran pemeriksaan BPOM</option></select></div>
+        </div>
+      </div>
+      <div class="scroll"><table id="tbl"></table></div>
+      <p class="note">Apotek di bawah ambang memperoleh pendampingan Dinkes dan IAI. Selisih antara catatan stok dan catatan penyerahan menjadi sasaran pemeriksaan BPOM.</p>
+    </div>
+    <div class="panel">
+      <h2>Catatan penyerahan sesi ini</h2>
+      <div class="scroll"><table id="log"></table></div>
+    </div>
+  </div>
+</section>
+
+<footer>Seluruh nama pembeli, nomor resep, kode KFA, dan baris apotek pada halaman ini adalah data simulasi. Angka 59 persen, 32,6 persen, dan ambang 80 persen mengikuti naskah esai AWARE-ID. Purwarupa oleh psan.</footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function pct(x){return (Math.round(x*10)/10).toString().replace(".",",")+"%"}
+function now(){var d=new Date();return ("0"+d.getHours()).slice(-2)+"."+("0"+d.getMinutes()).slice(-2)}
+var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+var PRODUK={
+  amx:{nama:"Amoksisilin 500 mg kapsul",kfa:"KFA 93001019",kelas:"Access",ab:true,satuan:"kapsul"},
+  cip:{nama:"Siprofloksasin 500 mg tablet",kfa:"KFA 93000842",kelas:"Watch",ab:true,satuan:"tablet"},
+  azi:{nama:"Azitromisin 500 mg tablet",kfa:"KFA 93001377",kelas:"Watch",ab:true,satuan:"tablet"},
+  pct:{nama:"Parasetamol 500 mg tablet",kfa:"KFA 93000351",kelas:"",ab:false,satuan:"tablet"},
+  obh:{nama:"Obat batuk sirup 100 ml",kfa:"KFA 93002210",kelas:"",ab:false,satuan:"botol"}
+};
+var RESEP0={
+  "NRN-6372-2610-000184":{pasien:"Siti Rahmah",obat:"amx",qty:15,tebus:false},
+  "NRN-6372-2610-000207":{pasien:"Ahmad Fauzi",obat:"cip",qty:10,tebus:false},
+  "NRN-6309-2609-000951":{pasien:"Budi Santoso",obat:"azi",qty:3,tebus:true}
+};
+var ANTRE=[
+  {id:"rina",nama:"Rina",ket:"Amoksisilin, tanpa resep",obat:"amx",qty:10,jenis:"t",nrn:"",cerita:"Batuk pilek adik, ingin cepat sembuh"},
+  {id:"siti",nama:"Siti Rahmah",ket:"Resep elektronik",obat:"amx",qty:15,jenis:"e",nrn:"NRN-6372-2610-000184"},
+  {id:"ahmad",nama:"Ahmad Fauzi",ket:"Minta lebih dari resep",obat:"cip",qty:14,jenis:"e",nrn:"NRN-6372-2610-000207"},
+  {id:"noor",nama:"Hj. Noorhayati",ket:"Resep kertas klinik",obat:"amx",qty:15,jenis:"k",nrn:""},
+  {id:"budi",nama:"Budi Santoso",ket:"Resep sudah ditebus",obat:"azi",qty:3,jenis:"e",nrn:"NRN-6309-2609-000951"},
+  {id:"dewi",nama:"Dewi",ket:"Parasetamol",obat:"pct",qty:10,jenis:"t",nrn:""}
+];
+var LOG0=[
+  {t:"08.12",nama:"Pembeli contoh 1",obat:"amx",status:"hijau",hasil:"Diserahkan, resep sah",serah:true,rx:true},
+  {t:"08.31",nama:"Pembeli contoh 2",obat:"cip",status:"hijau",hasil:"Diserahkan, resep sah",serah:true,rx:true},
+  {t:"08.47",nama:"Pembeli contoh 3",obat:"amx",status:"merah",hasil:"Jalur Sehat, obat bebas",serah:false,rx:false},
+  {t:"09.05",nama:"Pembeli contoh 4",obat:"amx",status:"kuning",hasil:"Disetujui apoteker",serah:true,rx:true},
+  {t:"09.20",nama:"Pembeli contoh 5",obat:"azi",status:"merah",hasil:"Jalur Sehat, telemedisin",serah:false,rx:false},
+  {t:"09.42",nama:"Pembeli contoh 6",obat:"amx",status:"hijau",hasil:"Diserahkan, resep sah",serah:true,rx:true}
+];
+var APOTEK=[
+  ["Apotek Mitra 01","Banjarbaru",91,18,0],["Apotek Mitra 02","Banjarbaru",84,22,0],
+  ["Apotek Mitra 03","Banjarbaru",77,31,4],["Apotek Mitra 04","Banjarbaru",62,38,0],
+  ["Apotek Mitra 05","Tabalong",88,20,0],["Apotek Mitra 06","Tabalong",71,35,12],
+  ["Apotek Mitra 07","Tabalong",48,44,27],["Apotek Mitra 08","Tabalong",81,26,0]
+];
+var PIN="2580";
+var TANYA=[
+  "Apakah demam 38°C atau lebih sudah berlangsung lebih dari 3 hari?",
+  "Apakah ada sesak napas atau napas terasa cepat?",
+  "Apakah nyeri tenggorokan sangat berat sampai sulit menelan atau sulit membuka mulut?",
+  "Apakah gejala sudah lebih dari 10 hari, atau memburuk lagi setelah sempat membaik?",
+  "Apakah ada dahak berdarah atau nyeri dada?",
+  "Apakah pasien bayi di bawah 3 bulan, lansia, sedang hamil, atau punya penyakit kronis?"
+];
+
+var S; // state
+function fresh(){
+  S={resep:JSON.parse(JSON.stringify(RESEP0)),log:LOG0.slice(),sel:"rina",cur:null,tri:null,sort:{k:2,dir:1},nrnSeq:311};
+}
+
+/* ---------- tabs ---------- */
+function show(tab,keep){
+  ["kasir","triase","dasbor"].forEach(function(t){
+    $("p-"+t).hidden=t!==tab;$("tab-"+t).setAttribute("aria-selected",t===tab?"true":"false");
+  });
+  if(tab==="dasbor")renderDash();
+  if(tab==="triase")renderTri();
+  try{localStorage.setItem("aware.tab",tab)}catch(e){}
+  if(!keep){try{history.replaceState(null,"","#"+tab)}catch(e){}}
+}
+document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){show(b.dataset.tab)})});
+
+var toastT;
+function toast(m){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},3200)}
+
+/* ---------- kasir ---------- */
+function renderQueue(){
+  $("queue").innerHTML=ANTRE.map(function(a){
+    return '<button type="button" class="person" data-id="'+a.id+'" aria-pressed="'+(S.sel===a.id)+'"><b>'+esc(a.nama)+'</b><span>'+esc(a.ket)+'</span></button>';
+  }).join("");
+}
+$("queue").addEventListener("click",function(e){
+  var b=e.target.closest(".person");if(!b)return;
+  S.sel=b.dataset.id;fill(ANTRE.filter(function(a){return a.id===S.sel})[0]);renderQueue();runCheck(true);
+});
+function fill(a){$("fObat").value=a.obat;$("fNama").value=a.nama;$("fQty").value=a.qty;$("fJenis").value=a.jenis;$("fNrn").value=a.nrn;syncNrn()}
+function syncNrn(){var e=$("fJenis").value==="e";$("fNrn").disabled=!e;if(!e)$("fNrn").value=""}
+$("fJenis").addEventListener("change",syncNrn);
+$("scanForm").addEventListener("submit",function(e){e.preventDefault();runCheck(true)});
+$("gate").addEventListener("change",function(){if(S.cur)renderResult(false)});
+
+function evaluate(f){
+  var p=PRODUK[f.obat],c=[];
+  c.push({k:"ok",t:"Kode KFA terbaca",d:p.kfa+" · "+p.nama+(p.ab?" · antibiotik kelompok "+p.kelas:" · bukan antibiotik")});
+  if(!p.ab)return {status:"biasa",checks:c,alasan:"Bukan antibiotik. Transaksi berjalan seperti biasa."};
+  if(f.jenis==="t"){
+    c.push({k:"bad",t:"Nomor Resep Nasional",d:"Pembeli tidak membawa resep"});
+    c.push({k:"skip",t:"Nama pasien",d:"Tidak diperiksa"},{k:"skip",t:"Status tebus",d:"Tidak diperiksa"},{k:"skip",t:"Jumlah",d:"Tidak diperiksa"});
+    return {status:"merah",checks:c,alasan:"Permintaan antibiotik tanpa resep. Penyerahan dikunci dan Jalur Sehat dibuka."};
+  }
+  if(f.jenis==="k"){
+    c.push({k:"warn",t:"Nomor Resep Nasional",d:"Resep kertas, belum tercatat di SATUSEHAT"});
+    c.push({k:"warn",t:"Nama pasien",d:"Dicocokkan apoteker pada lembar resep"},{k:"warn",t:"Status tebus",d:"Dicek apoteker pada lembar resep"},{k:"warn",t:"Jumlah",d:"Dicek apoteker pada lembar resep"});
+    return {status:"kuning",checks:c,alasan:"Resep kertas wajib dikonfirmasi apoteker sebelum obat diserahkan."};
+  }
+  var r=S.resep[f.nrn.trim().toUpperCase()],bad=null;
+  if(!r){
+    c.push({k:"bad",t:"Nomor Resep Nasional",d:f.nrn?"Nomor "+f.nrn+" tidak ditemukan di SATUSEHAT":"Nomor belum diisi"});
+    c.push({k:"skip",t:"Nama pasien",d:"Tidak diperiksa"},{k:"skip",t:"Status tebus",d:"Tidak diperiksa"},{k:"skip",t:"Jumlah",d:"Tidak diperiksa"});
+    return {status:"merah",checks:c,alasan:"Tidak ada resep sah yang tertaut. Penyerahan dikunci dan Jalur Sehat dibuka."};
+  }
+  if(r.obat!==f.obat){c.push({k:"bad",t:"Nomor Resep Nasional",d:"Resep ditulis untuk "+PRODUK[r.obat].nama});bad="Obat yang dipindai tidak sama dengan obat pada resep."}
+  else c.push({k:"ok",t:"Nomor Resep Nasional",d:"Sah, "+PRODUK[r.obat].nama+" "+r.qty+" "+PRODUK[r.obat].satuan});
+  var same=r.pasien.trim().toLowerCase()===f.nama.trim().toLowerCase();
+  c.push(same?{k:"ok",t:"Nama pasien",d:"Cocok dengan "+r.pasien}:{k:"bad",t:"Nama pasien",d:"Resep atas nama pasien lain"});
+  if(!same&&!bad)bad="Resep bukan atas nama pasien ini.";
+  c.push(r.tebus?{k:"bad",t:"Status tebus",d:"Resep sudah pernah ditebus"}:{k:"ok",t:"Status tebus",d:"Belum pernah ditebus"});
+  if(r.tebus&&!bad)bad="Resep sudah pernah ditebus dan tidak bisa dipakai ulang.";
+  var lebih=f.qty>r.qty;
+  c.push(lebih?{k:"warn",t:"Jumlah",d:"Diminta "+f.qty+", resep "+r.qty}:{k:"ok",t:"Jumlah",d:f.qty+" dari "+r.qty+" pada resep"});
+  if(bad)return {status:"merah",checks:c,alasan:bad+" Penyerahan dikunci dan Jalur Sehat dibuka."};
+  if(lebih)return {status:"kuning",checks:c,alasan:"Jumlah yang diminta melebihi resep. Apoteker wajib mengonfirmasi.",rx:r,key:f.nrn.trim().toUpperCase()};
+  return {status:"hijau",checks:c,alasan:"Resep sah, atas nama pasien yang sama, dan belum ditebus.",rx:r,key:f.nrn.trim().toUpperCase()};
+}
+function runCheck(animate){
+  var f={obat:$("fObat").value,nama:$("fNama").value||"Pembeli",qty:Math.max(1,parseInt($("fQty").value,10)||1),jenis:$("fJenis").value,nrn:$("fNrn").value};
+  S.cur={f:f,res:evaluate(f),done:null,err:""};
+  renderResult(animate&&!reduce);
+}
+var LABEL={hijau:"HIJAU",kuning:"KUNING",merah:"MERAH",biasa:"TRANSAKSI BIASA"};
+var ICON={ok:"✓",warn:"!",bad:"✕",skip:"·"};
+function renderResult(animate){
+  var c=S.cur,r=c.res,p=PRODUK[c.f.obat],gate=$("gate").checked,h="";
+  h+='<div class="row between"><div class="eyebrow">Putusan sistem</div><span class="mono note">'+esc(c.f.nama)+' · '+c.f.qty+' '+p.satuan+'</span></div>';
+  h+='<div class="status s-'+r.status+'" id="stBox"><div class="big"><span class="dot"></span>'+LABEL[r.status]+'</div><p>'+esc(r.alasan)+'</p></div>';
+  h+='<ul class="checks">'+r.checks.map(function(x,i){return '<li class="c-'+x.k+(animate?' wait':'')+'" data-i="'+i+'"><span class="ic">'+ICON[x.k]+'</span><span><b>'+esc(x.t)+'</b><br><span class="d">'+esc(x.d)+'</span></span></li>'}).join("")+'</ul>';
+  h+='<div id="act" style="display:flex;flex-direction:column;gap:10px"'+(animate?' hidden':'')+'>'+actions(c,r,gate)+'</div>';
+  $("result").innerHTML=h;
+  if(animate){
+    var box=$("stBox");box.className="status s-idle";box.querySelector(".big").lastChild.textContent="MEMERIKSA SATUSEHAT";
+    var lis=$("result").querySelectorAll(".checks li"),n=lis.length;
+    lis.forEach(function(li,i){setTimeout(function(){li.classList.remove("wait")},180*(i+1))});
+    var who=c;
+    setTimeout(function(){if(S.cur===who)renderResult(false)},180*(n+1));
+  }
+}
+function actions(c,r,gate){
+  if(c.done)return '<div class="status s-idle"><p><b>'+esc(c.done)+'</b></p></div><button class="btn ghost" data-a="next" type="button">Pembeli berikutnya</button>';
+  if(r.status==="biasa")return '<button class="btn" data-a="biasa" type="button">Selesaikan transaksi</button>';
+  if(!gate)return '<p class="note">Gerbang dimatikan. Beginilah Celah Meja Serah bekerja hari ini, kasir bisa menyerahkan tanpa pemeriksaan.</p><button class="btn" data-a="bebas" type="button">Serahkan tanpa pemeriksaan</button>';
+  if(r.status==="hijau")return '<button class="btn" data-a="serah" type="button">Serahkan obat</button>';
+  if(r.status==="kuning")return '<button class="btn" disabled type="button">Serahkan obat (terkunci untuk kasir)</button>'+
+    '<div class="lockbox"><b>Konfirmasi apoteker</b><div class="f"><label for="pin">PIN apoteker (simulasi '+PIN+')</label><input id="pin" class="mono" inputmode="numeric" maxlength="4" autocomplete="off" style="max-width:140px"></div>'+
+    (c.err?'<p class="err">'+esc(c.err)+'</p>':'')+
+    '<div class="row"><button class="btn" data-a="setuju" type="button">'+(r.rx?'Setujui sesuai resep ('+r.rx.qty+')':'Setujui penyerahan')+'</button><button class="btn ghost" data-a="alih" type="button">Alihkan ke Jalur Sehat</button></div></div>';
+  return '<button class="btn" disabled type="button">Serahkan obat (terkunci)</button><button class="btn" data-a="jalur" type="button">Buka Jalur Sehat</button><p class="note">Pembeli tidak ditolak begitu saja. Ia tetap pulang dengan jalan keluar yang sah.</p>';
+}
+function addLog(c,status,hasil,serah,rx){S.log.push({t:now(),nama:c.f.nama,obat:c.f.obat,status:status,hasil:hasil,serah:serah,rx:rx})}
+function openTri(c){
+  S.tri={ctx:{nama:c.f.nama,obat:c.f.obat,qty:c.f.qty,status:c.res.status},ans:[],fin:null,over:false,src:c};
+  $("triCnt").hidden=false;show("triase");
+}
+$("result").addEventListener("click",function(e){
+  var b=e.target.closest("[data-a]");if(!b)return;
+  var a=b.dataset.a,c=S.cur,r=c.res;
+  if(a==="next"){
+    var i=ANTRE.map(function(x){return x.id}).indexOf(S.sel);S.sel=ANTRE[(i+1)%ANTRE.length].id;
+    fill(ANTRE.filter(function(x){return x.id===S.sel})[0]);renderQueue();runCheck(true);return;
+  }
+  if(a==="biasa"){c.done="Transaksi selesai. Obat bebas tidak melewati gerbang.";toast("Transaksi selesai")}
+  if(a==="serah"){if(r.key)S.resep[r.key].tebus=true;addLog(c,"hijau","Diserahkan, resep sah",true,true);c.done="Obat diserahkan. Resep ditandai sudah ditebus di SATUSEHAT.";toast("Diserahkan dan tercatat")}
+  if(a==="bebas"){var ok=r.status==="hijau";if(ok&&r.key)S.resep[r.key].tebus=true;addLog(c,r.status,ok?"Diserahkan, resep sah":"Diserahkan tanpa gerbang",true,ok);c.done=ok?"Obat diserahkan.":"Antibiotik keluar tanpa resep sah. RSB sesi ini turun.";toast(ok?"Diserahkan":"Tercatat sebagai serah tanpa resep")}
+  if(a==="setuju"||a==="alih"){
+    var pin=$("pin").value;
+    if(pin!==PIN){c.err="PIN tidak cocok. Hanya apoteker yang bisa membuka status kuning.";renderResult(false);$("pin").focus();return}
+    c.err="";
+    if(a==="setuju"){if(r.key)S.resep[r.key].tebus=true;addLog(c,"kuning","Disetujui apoteker",true,true);c.done=r.rx?"Apoteker menyetujui "+r.rx.qty+" "+PRODUK[c.f.obat].satuan+" sesuai resep.":"Apoteker memeriksa resep kertas dan menyetujui penyerahan.";toast("Disetujui apoteker")}
+    else{openTri(c);return}
+  }
+  if(a==="jalur"){openTri(c);return}
+  renderResult(false);
+});
+
+/* ---------- triase ---------- */
+function renderTri(){
+  if(!S.tri)S.tri={ctx:{nama:"Rina",obat:"amx",qty:10,status:"merah"},ans:[],fin:null,over:false,src:null,contoh:true};
+  var T=S.tri,p=PRODUK[T.ctx.obat],n=T.ans.length,h="";
+  h+='<div class="row between"><div><div class="eyebrow">Tablet konter'+(T.contoh?' · contoh':'')+'</div><b>'+esc(T.ctx.nama)+'</b> <span class="note">meminta '+esc(p.nama)+'</span></div><span class="pill p-bad">Status merah</span></div>';
+  h+='<div class="prog">'+TANYA.map(function(_,i){return '<i class="'+(i<n?(T.ans[i]?'flag':'done'):'')+'"></i>'}).join("")+'</div>';
+  if(n<TANYA.length){
+    h+='<div class="eyebrow">Pertanyaan '+(n+1)+' dari 6</div><p class="q">'+esc(TANYA[n])+'</p>';
+    h+='<div class="row"><button class="btn big ghost" data-t="tidak" type="button">Tidak</button><button class="btn big ghost" data-t="ya" type="button">Ya</button></div>';
+    if(n>0)h+='<div><button class="btn quiet" data-t="back" type="button">Kembali ke pertanyaan sebelumnya</button></div>';
+  }else{
+    var flags=T.ans.filter(Boolean).length,rujuk=flags>0||T.over;
+    if(T.fin){h+='<div class="status s-idle"><p><b>'+esc(T.fin)+'</b></p></div><div class="row"><button class="btn" data-t="kasir" type="button">Kembali ke Layar Kasir</button><button class="btn ghost" data-t="dash" type="button">Lihat Dasbor RSB</button></div>'}
+    else if(!rujuk){
+      h+='<div class="status s-hijau"><div class="big" style="font-size:19px"><span class="dot"></span>Saran: obat bebas nonantibiotik</div><p>Tidak ada tanda bahaya. Keluhan seperti ini umumnya disebabkan virus dan tidak membutuhkan antibiotik.</p></div>';
+      h+='<ul class="advice"><li>Parasetamol bila demam atau nyeri, sesuai aturan pakai</li><li>Pelega tenggorokan atau obat batuk bebas sesuai keluhan</li><li>Istirahat dan minum cukup</li><li>Kembali atau ke dokter bila dalam 3 hari tidak membaik atau muncul sesak</li></ul>';
+      h+='<div class="lockbox" style="border-color:var(--line)"><b>Keputusan apoteker</b><div class="row"><button class="btn" data-t="otc" type="button">Setujui saran obat bebas</button><button class="btn ghost" data-t="over" type="button">Ubah menjadi rujukan telemedisin</button></div></div>';
+    }else{
+      h+='<div class="status s-kuning"><div class="big" style="font-size:19px"><span class="dot"></span>Saran: rujuk telemedisin</div><p>'+(flags?flags+' tanda bahaya terjawab ya. ':'Apoteker menilai perlu pemeriksaan dokter. ')+'Dokter menilai apakah antibiotik memang diperlukan.</p></div>';
+      h+='<div class="lockbox" style="border-color:var(--line)"><b>Simulasi hasil konsultasi dokter</b><p class="note">Biaya telemedisin mengikuti tarif layanan berizin yang dipilih pembeli.</p><div class="row"><button class="btn" data-t="rx" type="button">Dokter menerbitkan resep elektronik</button><button class="btn ghost" data-t="norx" type="button">Dokter menilai antibiotik tidak perlu</button></div></div>';
+    }
+    if(!T.fin)h+='<div><button class="btn quiet" data-t="ulang" type="button">Ulangi triase</button></div>';
+  }
+  $("triage").innerHTML=h;
+}
+function triLog(hasil){
+  var T=S.tri;S.log.push({t:now(),nama:T.ctx.nama,obat:T.ctx.obat,status:T.ctx.status,hasil:hasil,serah:false,rx:false});
+  if(T.src)T.src.done=hasil+".";
+  $("triCnt").hidden=true;
+}
+$("triage").addEventListener("click",function(e){
+  var b=e.target.closest("[data-t]");if(!b)return;var a=b.dataset.t,T=S.tri;
+  if(a==="ya")T.ans.push(true);
+  if(a==="tidak")T.ans.push(false);
+  if(a==="back")T.ans.pop();
+  if(a==="ulang"){T.ans=[];T.over=false}
+  if(a==="over")T.over=true;
+  if(a==="otc"){triLog("Jalur Sehat, obat bebas");T.fin="Pembeli pulang dengan obat bebas. Apotek tetap memperoleh pendapatan dan antibiotik tidak keluar.";toast("Tercatat di Cermin AWaRe")}
+  if(a==="norx"){triLog("Jalur Sehat, telemedisin tanpa antibiotik");T.fin="Dokter menilai antibiotik tidak diperlukan. Pembeli memperoleh obat bebas sesuai saran dokter."}
+  if(a==="rx"){
+    var key="NRN-6372-2610-000"+(S.nrnSeq++);
+    S.resep[key]={pasien:T.ctx.nama,obat:T.ctx.obat,qty:T.ctx.qty,tebus:false};
+    triLog("Jalur Sehat, telemedisin, resep terbit");
+    $("fObat").value=T.ctx.obat;$("fNama").value=T.ctx.nama;$("fQty").value=T.ctx.qty;$("fJenis").value="e";syncNrn();$("fNrn").value=key;
+    S.sel="";renderQueue();S.tri=null;show("kasir");runCheck(true);toast("Resep elektronik "+key+" terbit. Kemasan dipindai ulang.");return;
+  }
+  if(a==="kasir"){S.tri=null;show("kasir");if(S.cur)renderResult(false);return}
+  if(a==="dash"){S.tri=null;show("dasbor");return}
+  renderTri();
+});
+
+/* ---------- dasbor ---------- */
+function stats(){
+  var ab=S.log.filter(function(l){return PRODUK[l.obat].ab});
+  var d=ab.filter(function(l){return l.serah}),rx=d.filter(function(l){return l.rx}).length;
+  var w=d.filter(function(l){return PRODUK[l.obat].kelas==="Watch"}).length;
+  var cnt={hijau:0,kuning:0,merah:0};ab.forEach(function(l){cnt[l.status]++});
+  return {n:ab.length,d:d.length,rsb:d.length?rx/d.length*100:0,watch:d.length?w/d.length*100:0,cnt:cnt,lolos:d.length-rx,
+    tahan:ab.filter(function(l){return !l.serah}).length};
+}
+function cls(v){return v>=80?"hi":v>=60?"mid":"low"}
+function stApotek(a){return a[4]>0?"Sasaran pemeriksaan BPOM":a[2]<80?"Pendampingan":"Di atas ambang"}
+function stPill(s){return '<span class="pill '+(s==="Di atas ambang"?"p-ok":s==="Pendampingan"?"p-warn":"p-bad")+'">'+s+'</span>'}
+function renderDash(){
+  var st=stats();
+  $("kpis").innerHTML=[
+    ["RSB sesi ini",pct(st.rsb),st.d+" penyerahan antibiotik, "+(st.rsb>=80?"di atas ambang":"di bawah ambang")],
+    ["Ambang pilot","80%","Target minimal fase pilot 2028"],
+    ["RSB proksi nasional","±59%","Dari SKI 2023"],
+    ["RSB kunjungan uji Tabalong","32,6%","Wulandari et al. (2021)"],
+    ["Porsi Watch sesi ini",pct(st.watch),"Dari antibiotik yang diserahkan"]
+  ].map(function(k){return '<div class="kpi"><div class="eyebrow">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>'}).join("");
+  $("bars").innerHTML=[["Tabalong (uji)",32.6],["Proksi nasional",59],["Sesi ini",st.rsb]].map(function(b){
+    return '<div class="bar"><span>'+b[0]+'</span><div class="track"><div class="fill '+cls(b[1])+'" style="width:'+Math.min(100,b[1])+'%"></div><div class="thr"></div></div><span class="n">'+pct(b[1])+'</span></div>'}).join("");
+  var m=Math.max(1,st.n);
+  $("mix").innerHTML=[["Hijau",st.cnt.hijau,"hi"],["Kuning",st.cnt.kuning,"mid"],["Merah",st.cnt.merah,"low"]].map(function(b){
+    return '<div class="bar"><span>'+b[0]+'</span><div class="track"><div class="fill '+b[2]+'" style="width:'+(b[1]/m*100)+'%"></div></div><span class="n">'+b[1]+'</span></div>'}).join("");
+  $("mixNote").textContent=st.n+" permintaan antibiotik. "+st.tahan+" dialihkan ke Jalur Sehat"+(st.lolos?", "+st.lolos+" keluar tanpa resep sah karena gerbang dimatikan.":". Tidak ada antibiotik yang keluar tanpa resep sah.")+" Keberhasilan terlihat saat status merah turun.";
+  // tabel apotek
+  var rows=APOTEK.map(function(a){return a.concat([stApotek(a),false])});
+  rows.push(["Sesi ini (Layar Kasir)","Banjarbaru",Math.round(st.rsb*10)/10,Math.round(st.watch*10)/10,0,st.rsb<80?"Pendampingan":"Di atas ambang",true]);
+  var w=$("fWil").value,f=$("fSt").value,k=S.sort.k,dir=S.sort.dir;
+  rows=rows.filter(function(r){return (!w||r[1]===w)&&(!f||r[5]===f)});
+  rows.sort(function(a,b){return (a[k]>b[k]?1:a[k]<b[k]?-1:0)*dir});
+  var H=["Apotek","Wilayah","RSB","Porsi Watch","Selisih stok","Status"];
+  $("tbl").innerHTML='<thead><tr>'+H.map(function(x,i){return '<th class="'+(i>=2&&i<=4?'num':'')+'"><button type="button" data-k="'+i+'">'+x+(k===i?(dir>0?' ↑':' ↓'):'')+'</button></th>'}).join("")+'</tr></thead><tbody>'+
+    (rows.length?rows.map(function(r){return '<tr class="'+(r[6]?'live':'')+'"><td>'+r[0]+'</td><td>'+r[1]+'</td><td class="num">'+pct(r[2])+'</td><td class="num">'+pct(r[3])+'</td><td class="num">'+(r[4]?r[4]+' unit':'cocok')+'</td><td>'+stPill(r[5])+'</td></tr>'}).join(""):'<tr><td colspan="6">Tidak ada apotek pada saringan ini.</td></tr>')+'</tbody>';
+  $("log").innerHTML='<thead><tr><th>Jam</th><th>Pembeli</th><th>Obat</th><th>Kelompok</th><th>Status</th><th>Hasil</th></tr></thead><tbody>'+
+    S.log.slice().reverse().map(function(l){var p=PRODUK[l.obat];return '<tr><td class="mono">'+l.t+'</td><td>'+esc(l.nama)+'</td><td>'+p.nama+'</td><td>'+(p.kelas||"")+'</td><td><span class="pill '+(l.status==="hijau"?"p-ok":l.status==="kuning"?"p-warn":"p-bad")+'">'+l.status+'</span></td><td>'+esc(l.hasil)+'</td></tr>'}).join("")+'</tbody>';
+}
+$("tbl").addEventListener("click",function(e){var b=e.target.closest("[data-k]");if(!b)return;var k=+b.dataset.k;S.sort=S.sort.k===k?{k:k,dir:-S.sort.dir}:{k:k,dir:1};renderDash()});
+$("fWil").addEventListener("change",renderDash);$("fSt").addEventListener("change",renderDash);
+$("reset").addEventListener("click",function(){boot(true);show("dasbor");toast("Data simulasi dikembalikan")});
+
+/* ---------- boot ---------- */
+function boot(keepTab){
+  fresh();
+  $("fObat").innerHTML=Object.keys(PRODUK).map(function(k){return '<option value="'+k+'">'+PRODUK[k].nama+'</option>'}).join("");
+  $("triCnt").hidden=true;$("gate").checked=true;
+  renderQueue();fill(ANTRE[0]);runCheck(false);
+  if(!keepTab){
+    var t=(location.hash||"").slice(1);
+    if(["kasir","triase","dasbor"].indexOf(t)<0){try{t=localStorage.getItem("aware.tab")}catch(e){t=null}}
+    show(["kasir","triase","dasbor"].indexOf(t)<0?"kasir":t,true);
+  }
+}
+boot(false);
+})();
+</script>
+
+</body>
+</html>
